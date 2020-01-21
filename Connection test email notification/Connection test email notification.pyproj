@@ -28,6 +28,7 @@
   </ItemGroup>
   <ItemGroup>
     <Content Include="creds.csv" />
+    <Content Include="email_recipients.csv" />
     <Content Include="hosts.csv" />
     <Content Include="options.csv" />
   </ItemGroup>

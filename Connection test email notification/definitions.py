@@ -23,29 +23,25 @@ def checkPing(host):
     return pingstatus
 
 #send an email notification
-def sendEmail(email, passwrd, text, host, reason):
-    print("Sending email to admin at " + email)
+def sendEmail(sender, passwd, recipients, body, subject):
     #Create message parameters
-    emailAddress = email
     message = MIMEMultipart()
-    sender = host
-    subject = reason
-    body = text
+    for destination_address in recipients:
+        print("Sending email to admin at " + destination_address)
+        #Create message
+        message['From'] = sender
+        message["To"] = ','.join(destination_address)
+        message["Subject"] = subject
+        message.attach(MIMEText(body, "plain"))
+        text = message.as_string()
 
-    #Create message
-    message['From'] = sender
-    message["To"] = ','.join(emailAddress)
-    message["Subject"] = subject
-    message.attach(MIMEText(body, "plain"))
-    text = message.as_string()
-
-    #Connect to google smtp server (can be changed to different provider)
-    server = smtplib.SMTP('smtp.gmail.com', 587)
-    server.starttls() #begin a secure transmission
-    server.login(email, passwrd)
-    #send message
-    server.sendmail(sender, emailAddress, text)
-    server.quit()
+        #Connect to google smtp server (can be changed to different provider)
+        server = smtplib.SMTP('smtp.gmail.com', 587)
+        server.starttls() #begin a secure transmission
+        server.login(sender, passwd)
+        #send message
+        server.sendmail(sender, destination_address, text)
+        server.quit()
 
 def simpleTimer(delay):
     startTime = int(time.time())

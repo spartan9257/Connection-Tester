@@ -32,9 +32,13 @@ last_email_sent_time = 0        #saves the time that the last email was sent
 prior_email_sent = False 
 DetectedFailures = False
 failedDevices = []              #maintains a list of the host's whos connection failed
+periodicInterval = 10           #Time in seconds between connection tests
 
 while(True):
-    simpleTimer(60)
+    print("Periodic timer started\The current time is: ", end=":")
+    os.system("time /T")
+    simpleTimer(periodicInterval)
+    print("Begining connection tests")
     for host in hosts_info:
         print("Begining connection tests")
         #attempt to ping the host IP, if it fails generate an email if non has been generated
@@ -46,16 +50,21 @@ while(True):
                 issue_start_time = int(time.time())
 
                 #Get all the data needed to send an email notification
-                text = "WARNING! Connection to host " + str(host[0]) + " failed.\n" + str(host[1]) + "\n" + str(host[2]) 
+                body = "WARNING! Connection to host " + str(host[0]) + " failed.\n" + str(host[1]) + "\n" + str(host[2]) 
                 subject = "Connection Failure"
-                hostIP = str(host[0])
-                email = str(creds[0][0])
+                sender = str(creds[0][0])
+                destination_address = []
                 passwd = str(creds[0][1])
+                #Get the recipient(s) addresses from a csv file
+                recipients = open("email_recipients.csv", "r")
+                for address in recipients:
+                    destination_address.append(address)
+                recipients.close()
 
             #If a prior email hasn't been sent, generate one now.
             if prior_email_sent == False:
                 print("No prior issue logged, generating notification")
-                sendEmail(email, passwd, text, hostIP, subject)
+                sendEmail(sender, passwd, destination_address, body, subject)
                 prior_email_sent = True
                 last_email_sent_time = int(time.time())
 
@@ -63,7 +72,7 @@ while(True):
             #the time lapsed exceeds the periodic interval.
             elif int(time.time()) - last_email_sent_time >= email_notification_every:
                 print("Persistant issue logged again, generating another email")
-                sendEmail(email, passwd, text, hostIP, subject)
+                sendEmail(sender, passwd, destination_address, body, subject)
                 prior_email_sent = True
                 last_email_sent_time = int(time.time())
 
@@ -92,7 +101,7 @@ while(True):
                         #Send a new email informing the recipient that the connection has been restored
                         text = "Connection to host " + str(host[0]) + " was restored.\n" + str(host[1]) + "\n" + str(host[2]) 
                         subject = "Connection Restored!"
-                        sendEmail(email, passwd, text, hostIP, subject)
+                        sendEmail(sender, passwd, destination_address, body, subject)
         
         if not failedDevices:
             print("All connections successful")

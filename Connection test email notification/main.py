@@ -10,6 +10,7 @@ import csv,time,os,subprocess
 
 #Open the CSV file containing the list of hosts and append them to a list
 hosts_info = []
+print("Getting hosts information")
 with open("hosts.csv") as csvFile:
     csvReader = csv.reader(csvFile, delimiter=',')
     for row in csvReader:
@@ -35,6 +36,7 @@ failedDevices = []              #maintains a list of the host's whos connection 
 while(True):
     simpleTimer(60)
     for host in hosts_info:
+        print("Begining connection tests")
         #attempt to ping the host IP, if it fails generate an email if non has been generated
         #already. Or if enough time has lapsed since the last email was sent.
         if checkPing(host[0]) == False:
@@ -78,7 +80,6 @@ while(True):
                         print("Logging the device as failed.")
                         failedDevices.append(host)
 
-
         else:
             #if the ping to a previouly failed device succeeds, remove it from the list of failed devices
             #and notify the admin.
@@ -92,4 +93,9 @@ while(True):
                         text = "Connection to host " + str(host[0]) + " was restored.\n" + str(host[1]) + "\n" + str(host[2]) 
                         subject = "Connection Restored!"
                         sendEmail(email, passwd, text, hostIP, subject)
+        
+        if not failedDevices:
+            print("All connections successful")
+        else:
+            print("Connection failures detected!")
             

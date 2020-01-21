@@ -54,17 +54,25 @@ while(True):
                 subject = "Connection Failure"
                 sender = str(creds[0][0])
                 destination_address = []
+                serverInfo = []
                 passwd = str(creds[0][1])
                 #Get the recipient(s) addresses from a csv file
-                recipients = open("email_recipients.csv", "r")
-                for address in recipients:
+                csvFile = open("email_recipients.csv", "r")
+                csvReader = csv.reader(csvFile, delimiter=',')
+                for address in csvReader:
                     destination_address.append(address)
-                recipients.close()
+                csvFile.close()
+                #Get the server ip address and port# from a csv file
+                csvFile = open("server_info.csv", "r")
+                csvReader = csv.reader(csvFile, delimiter=',')
+                for field in csvReader:
+                    serverInfo.append(field)
+                csvFile.close()
 
             #If a prior email hasn't been sent, generate one now.
             if prior_email_sent == False:
                 print("No prior issue logged, generating notification")
-                sendEmail(sender, passwd, destination_address, body, subject)
+                sendEmail(sender, passwd, destination_address, body, subject, serverInfo)
                 prior_email_sent = True
                 last_email_sent_time = int(time.time())
 
@@ -72,7 +80,7 @@ while(True):
             #the time lapsed exceeds the periodic interval.
             elif int(time.time()) - last_email_sent_time >= email_notification_every:
                 print("Persistant issue logged again, generating another email")
-                sendEmail(sender, passwd, destination_address, body, subject)
+                sendEmail(sender, passwd, destination_address, body, subject, serverInfo)
                 prior_email_sent = True
                 last_email_sent_time = int(time.time())
 
@@ -101,7 +109,7 @@ while(True):
                         #Send a new email informing the recipient that the connection has been restored
                         text = "Connection to host " + str(host[0]) + " was restored.\n" + str(host[1]) + "\n" + str(host[2]) 
                         subject = "Connection Restored!"
-                        sendEmail(sender, passwd, destination_address, body, subject)
+                        sendEmail(sender, passwd, destination_address, body, subject, serverInfo)
         
         if not failedDevices:
             print("All connections successful")

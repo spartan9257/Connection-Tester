@@ -23,11 +23,11 @@ def checkPing(host):
     return pingstatus
 
 #send an email notification
-def sendEmail(sender, passwd, recipients, body, subject):
+def sendEmail(sender, passwd, recipients, body, subject, serverInfo):
     #Create message parameters
     message = MIMEMultipart()
     for destination_address in recipients:
-        print("Sending email to admin at " + destination_address)
+        print("Sending email to admin at " + str(destination_address))
         #Create message
         message['From'] = sender
         message["To"] = ','.join(destination_address)
@@ -36,7 +36,8 @@ def sendEmail(sender, passwd, recipients, body, subject):
         text = message.as_string()
 
         #Connect to google smtp server (can be changed to different provider)
-        server = smtplib.SMTP('smtp.gmail.com', 587)
+        print("Connecting to server @" + str(serverInfo[0][0]) + " via port " + str(serverInfo[0][1]))
+        server = smtplib.SMTP(str(serverInfo[0][0]), str(serverInfo[0][1]))
         server.starttls() #begin a secure transmission
         server.login(sender, passwd)
         #send message

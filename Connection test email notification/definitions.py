@@ -11,16 +11,16 @@ def checkPing(host):
         response = os.system("ping -n 1 " + host)
         # and then check the response...
         if response == 0:
-            pingstatus = True
+            pingStatus = True
             break
         else:
             print("Reattempting the connection...")
-            pingstatus = False
+            pingStatus = False
             simpleTimer(10)
             count = count + 1
     if pingStatus == False:
         print("Unable to connect to host after 3 attempts")
-    return pingstatus
+    return pingStatus
 
 #send an email notification
 def sendEmail(sender, passwd, recipients, body, subject, serverInfo):

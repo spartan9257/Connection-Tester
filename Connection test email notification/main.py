@@ -52,6 +52,7 @@ while(True):
     for host in hosts_info:
         #attempt to ping the host IP, if it fails generate an email if non has been generated
         #already. Or if enough time has lapsed since the last email was sent.
+        print("-->")
         if checkPing(host[0]) == False:
             DetectedFailures = True
             if issue_start_time == 0:
@@ -121,10 +122,10 @@ while(True):
                         text = "Connection to host " + str(host[0]) + " was restored.\n" + str(host[1]) + "\n" + str(host[2]) 
                         subject = "Connection Restored!"
                         sendEmail(sender, passwd, destination_address, body, subject, serverInfo)
-        
-        if not failedDevices:
-            print("\nAll connections successful")
-        else:
-            print("\nConnection failures detected!")
-        print("=========================================================\n")
+        print("<--")    
+    if not failedDevices:
+        print("\nAll connections successful")
+    else:
+        print("\nConnection failures detected!")
+    print("=========================================================\n")
             

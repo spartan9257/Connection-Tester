@@ -45,7 +45,7 @@ failedDevices = []              #maintains a list of the host's whos connection 
 periodicInterval = 10           #Time in seconds between connection tests
 
 while(True):
-    print("Periodic timer started\nThe current time is:", end=":")
+    print("Periodic timer set for " + str(periodicInterval) + " seconds")
     os.system("time /T")
     simpleTimer(periodicInterval)
     print("Begining connection tests")
@@ -123,7 +123,8 @@ while(True):
                         sendEmail(sender, passwd, destination_address, body, subject, serverInfo)
         
         if not failedDevices:
-            print("All connections successful")
+            print("\nAll connections successful")
         else:
-            print("Connection failures detected!")
+            print("\nConnection failures detected!")
+        print("=========================================================\n")
             

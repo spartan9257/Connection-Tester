@@ -6,20 +6,20 @@ from email.mime.multipart import MIMEMultipart
 
 #Return true if ping was successful
 def checkPing(host):
-    hostname = host
     count = 0
     while(count < 1):
-        response = os.system("ping -n 1 " + hostname)
+        response = os.system("ping -n 1 " + host)
         # and then check the response...
         if response == 0:
             pingstatus = True
             break
         else:
-            print("Connection to host " + host + " failed! Reattempting...")
+            print("Reattempting the connection...")
             pingstatus = False
             simpleTimer(10)
             count = count + 1
-
+    if pingStatus == False:
+        print("Unable to connect to host after 3 attempts")
     return pingstatus
 
 #send an email notification

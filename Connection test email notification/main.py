@@ -1,9 +1,6 @@
 from definitions import checkPing, sendEmail, simpleTimer
+from os import path
 import csv,time,os,subprocess 
-
-#to Do:
-#1. instead of sending an email for every device that fails, condense all the failed
-#   devices into a single list. Then send an email with all of them.
 
 #!For gmail accounts less secure app access MUST be enabled
 #!https://myaccount.google.com/lesssecureapps
@@ -11,19 +8,32 @@ import csv,time,os,subprocess
 #Open the CSV file containing the list of hosts and append them to a list
 hosts_info = []
 print("Getting hosts information")
-with open("hosts.csv") as csvFile:
-    csvReader = csv.reader(csvFile, delimiter=',')
-    for row in csvReader:
-        hosts_info.append(row)
-    csvFile.close()
+#make sure the host file exists
+if path.exists("hosts.csv") == False:
+    print("Error: hosts.csv not found. Create the file and add it to the same directory as main.py")
+    os.system("pause")
+    exit()
+else:
+    with open("hosts.csv") as csvFile:
+        csvReader = csv.reader(csvFile, delimiter=',')
+        for row in csvReader:
+            if row:
+                hosts_info.append(row)
+        csvFile.close()
 
 #Get the credentials for the admin email account to send an email notification
 creds = []
-with open("creds.csv") as csvFile:
-    csvReader = csv.reader(csvFile, delimiter=',')
-    for row in csvReader:
-        creds.append(row)
-    csvFile.close()
+if path.exists("creds.csv") == False:
+    print("Error: creds.csv not found. Create the file and add it to the same directory as main.py")
+    os.system("pause")
+    exit()
+else:
+    with open("creds.csv") as csvFile:
+        csvReader = csv.reader(csvFile, delimiter=',')
+        for row in csvReader:
+            if row:
+                creds.append(row)
+        csvFile.close()
 
 issue_start_time = 0            #logs the time of the first failure occurence
 email_notification_every = 3600 #sets the interval that the emails will be periodically resent
@@ -35,12 +45,11 @@ failedDevices = []              #maintains a list of the host's whos connection 
 periodicInterval = 10           #Time in seconds between connection tests
 
 while(True):
-    print("Periodic timer started\The current time is: ", end=":")
+    print("Periodic timer started\nThe current time is:", end=":")
     os.system("time /T")
     simpleTimer(periodicInterval)
     print("Begining connection tests")
     for host in hosts_info:
-        print("Begining connection tests")
         #attempt to ping the host IP, if it fails generate an email if non has been generated
         #already. Or if enough time has lapsed since the last email was sent.
         if checkPing(host[0]) == False:
@@ -60,13 +69,15 @@ while(True):
                 csvFile = open("email_recipients.csv", "r")
                 csvReader = csv.reader(csvFile, delimiter=',')
                 for address in csvReader:
-                    destination_address.append(address)
+                    if address:
+                        destination_address.append(address)
                 csvFile.close()
                 #Get the server ip address and port# from a csv file
                 csvFile = open("server_info.csv", "r")
                 csvReader = csv.reader(csvFile, delimiter=',')
                 for field in csvReader:
-                    serverInfo.append(field)
+                    if field:
+                        serverInfo.append(field)
                 csvFile.close()
 
             #If a prior email hasn't been sent, generate one now.

@@ -1,9 +1,11 @@
-from definitions import checkPing, sendEmail, simpleTimer
+from definitions import checkPing, sendEmail, simpleTimer, create_log_file
+from subprocess import check_output
 from os import path
 import csv,time,os,subprocess 
 
 #!For gmail accounts less secure app access MUST be enabled
 #!https://myaccount.google.com/lesssecureapps
+
 
 #Open the CSV file containing the list of hosts and append them to a list
 hosts_info = []
@@ -50,6 +52,10 @@ while(True):
     os.system("time /T")
     simpleTimer(periodicInterval)
     print("Begining connection tests")
+    
+    #Checks to see if a log file exists, if not it creates one
+    #This allows a new log file to be created daily when the date changes
+    log_file_name = create_log_file()
 
     for host in hosts_info:
         #attempt to ping the host IP, if it fails generate an email if; none have been generated
@@ -57,6 +63,13 @@ while(True):
         print("\n--> ",end=" ")
         if checkPing(host[0]) == False:
             detectedFailures = True
+
+            #Write a new log entry
+            log = open(log_file_name,"a")
+            log_entry = check_output("time /T", shell=True).decode().replace("\n",'')
+            log_entry = log_entry[:len(log_entry)-1] + " Connection to host " + str(host) + " FAILED\n"
+            log.write(log_entry)
+            log.close()
 
             #check if a previous issue was logged already
             if issue_start_time == 0:
@@ -125,6 +138,12 @@ while(True):
                         body = "Connection to host " + str(host[0]) + " was restored.\n" + str(host[1]) + "\n" + str(host[2]) 
                         subject = "Connection Restored!"
                         sendEmail(sender, passwd, destination_address, body, subject, serverInfo)
+                        #Create a new log entry
+                        log = open(log_file_name,"a")
+                        log_entry = check_output("time /T", shell=True).decode().replace("\n",'')
+                        log_entry = log_entry[:len(log_entry)-1] + " Connection to host " + str(host) + " RESTORED\n"
+                        log.write(log_entry)
+                        log.close()
         print("<--")
 
     #If no failed devices are being tracked, reset trackers

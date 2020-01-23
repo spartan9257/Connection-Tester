@@ -3,11 +3,13 @@ import os
 import time
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from os import path
+from subprocess import check_output
 
 #Return true if ping was successful
 def checkPing(host):
     count = 0
-    while(count < 1):
+    while(count < 2):
         response = os.system("ping -n 1 " + host)
         # and then check the response...
         if response == 0:
@@ -16,7 +18,6 @@ def checkPing(host):
         else:
             print("Reattempting the connection...")
             pingStatus = False
-            simpleTimer(10)
             count = count + 1
     if pingStatus == False:
         print("Unable to connect to host after 3 attempts")
@@ -49,3 +50,29 @@ def simpleTimer(delay):
     while(True):
         if int(time.time()) - startTime >= delay:
             break
+
+
+def create_log_file():
+    #create a new log file name using the current date
+    the_time_is = check_output("time /T", shell=True).decode()
+    the_date_is = check_output("date /T", shell=True).decode()
+    dateEnd = the_date_is.find("\n")
+    the_date_is = str(the_date_is[4:dateEnd -2 ]).replace("/","-")
+    log_file_name = "logs/log_" + the_date_is + ".txt"
+
+    #check if the file already exists, if not create it
+    if not path.exists(log_file_name):
+        #Create the logs folder if it doesnt exist
+        if not path.exists("logs"):
+            print("Creating the logs folder")
+            os.mkdir("logs")
+        #add the log file to the folder
+        print("Creating a new log file")
+        logFile = open(log_file_name, "x")
+        logFile.close()
+        #Add the date/time in the first line
+        logFile = open(log_file_name,"w")
+        logFile.write(the_date_is + " @ " + the_time_is)
+        logFile.close()
+
+    return log_file_name

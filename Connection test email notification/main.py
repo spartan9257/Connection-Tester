@@ -40,21 +40,25 @@ email_notification_every = 3600 #sets the interval that the emails will be perio
 minutesLapsed = 0               #tracks the minutes that have lapsed since the last email was sent
 last_email_sent_time = 0        #saves the time that the last email was sent
 prior_email_sent = False 
-DetectedFailures = False
+detectedFailures = False
 failedDevices = []              #maintains a list of the host's whos connection failed
 periodicInterval = 10           #Time in seconds between connection tests
 
 while(True):
+    #Set a timer to control when the loop begins
     print("Periodic timer set for " + str(periodicInterval) + " seconds")
     os.system("time /T")
     simpleTimer(periodicInterval)
     print("Begining connection tests")
+
     for host in hosts_info:
-        #attempt to ping the host IP, if it fails generate an email if non has been generated
-        #already. Or if enough time has lapsed since the last email was sent.
-        print("-->")
+        #attempt to ping the host IP, if it fails generate an email if; none have been generated
+        #already, or enough time has lapsed since the last email was sent.
+        print("\n--> ",end=" ")
         if checkPing(host[0]) == False:
-            DetectedFailures = True
+            detectedFailures = True
+
+            #check if a previous issue was logged already
             if issue_start_time == 0:
                 print("Logging issue occurence start time")
                 issue_start_time = int(time.time())
@@ -102,7 +106,6 @@ while(True):
                 failedDevices.append(host)
             else:
                 for device in failedDevices:
-                    print(device)
                     if device == host:
                         found = True
                     if found == False:
@@ -112,18 +115,23 @@ while(True):
         else:
             #if the ping to a previouly failed device succeeds, remove it from the list of failed devices
             #and notify the admin.
-            if DetectedFailures:
+            if detectedFailures:
                 for device in failedDevices:
                     if host == device:
                         print("Connection to " + host[0] + "Restored")
                         print("Removing device from the failed log")
                         failedDevices.remove(host)
                         #Send a new email informing the recipient that the connection has been restored
-                        text = "Connection to host " + str(host[0]) + " was restored.\n" + str(host[1]) + "\n" + str(host[2]) 
+                        body = "Connection to host " + str(host[0]) + " was restored.\n" + str(host[1]) + "\n" + str(host[2]) 
                         subject = "Connection Restored!"
                         sendEmail(sender, passwd, destination_address, body, subject, serverInfo)
-        print("<--")    
+        print("<--")
+
+    #If no failed devices are being tracked, reset trackers
     if not failedDevices:
+        issue_start_time = 0
+        detectedFailures = False
+        prior_email_sent = False
         print("\nAll connections successful")
     else:
         print("\nConnection failures detected!")

@@ -3,8 +3,15 @@ from subprocess import check_output
 from os import path
 import csv,time,os,subprocess 
 
+#The Simple Connection Tester v1.0.1
+print("The Simple Connection Tester v1.0.1")
+
 #!For gmail accounts less secure app access MUST be enabled
 #!https://myaccount.google.com/lesssecureapps
+
+debugFile = open("debug.txt","w")
+debugFile.close()
+
 
 
 #Open the CSV file containing the list of hosts and append them to a list
@@ -45,29 +52,44 @@ prior_email_sent = False
 detectedFailures = False
 failedDevices = []              #maintains a list of the host's whos connection failed
 periodicInterval = 10           #Time in seconds between connection tests
+debug_on = False                #Creates a file debug.txt that contains program logs
 
 while(True):
+
+    debugFile = open("debug.txt", "a")
+
     #Set a timer to control when the loop begins
     print("Periodic timer set for " + str(periodicInterval) + " seconds")
     os.system("time /T")
+    print("Timer started...")
     simpleTimer(periodicInterval)
     print("Begining connection tests")
     
     #Checks to see if a log file exists, if not it creates one
     #This allows a new log file to be created daily when the date changes
     log_file_name = create_log_file()
-
+    
+    #attempt to ping the host IP, if it fails generate an email if none have been generated
+    #already, or enough time has lapsed since the last email was sent.
     for host in hosts_info:
-        #attempt to ping the host IP, if it fails generate an email if; none have been generated
-        #already, or enough time has lapsed since the last email was sent.
         print("\n--> ",end=" ")
-        if checkPing(host[0]) == False:
+
+        #Convert the hosts failure time tracker to an integer
+        host[3] = int(host[3])
+        
+        #Test the connection to the host
+        pingStatus = checkPing(host[0])
+
+        if pingStatus == False:
+            if debug_on:
+                debugFile.write("Connection failed\n")
+            #Track the state of failed connections
             detectedFailures = True
 
             #Write a new log entry
             log = open(log_file_name,"a")
             log_entry = check_output("time /T", shell=True).decode().replace("\n",'')
-            log_entry = log_entry[:len(log_entry)-1] + " Connection to host " + str(host) + " FAILED\n"
+            log_entry = log_entry[:len(log_entry)-1] + " Connection to host " + str(host[:3]) + " FAILED\n"
             log.write(log_entry)
             log.close()
 
@@ -75,7 +97,11 @@ while(True):
             if issue_start_time == 0:
                 print("Logging issue occurence start time")
                 issue_start_time = int(time.time())
+                if debug_on:
+                    debugFile.write("issue start time: " + str(issue_start_time) + "\n")
 
+            #This if is only here because VS auto indented the following 20 lines and im lazy..
+            if True:
                 #Get all the data needed to send an email notification
                 body = "WARNING! Connection to host " + str(host[0]) + " failed.\n" + str(host[1]) + "\n" + str(host[2]) 
                 subject = "Connection Failure"
@@ -83,6 +109,7 @@ while(True):
                 destination_address = []
                 serverInfo = []
                 passwd = str(creds[0][1])
+
                 #Get the recipient(s) addresses from a csv file
                 csvFile = open("email_recipients.csv", "r")
                 csvReader = csv.reader(csvFile, delimiter=',')
@@ -90,6 +117,7 @@ while(True):
                     if address:
                         destination_address.append(address)
                 csvFile.close()
+
                 #Get the server ip address and port# from a csv file
                 csvFile = open("server_info.csv", "r")
                 csvReader = csv.reader(csvFile, delimiter=',')
@@ -99,55 +127,78 @@ while(True):
                 csvFile.close()
 
             #If a prior email hasn't been sent, generate one now.
-            if prior_email_sent == False:
-                print("No prior issue logged, generating notification")
+            if host[3] == 0:
+                if debug_on:
+                    debugFile.write("Host last email sent time is 0, sending first email\n")
+                print("No prior issue logged for this host, generating notification")
                 sendEmail(sender, passwd, destination_address, body, subject, serverInfo)
-                prior_email_sent = True
-                last_email_sent_time = int(time.time())
+                #track the time the email was sent for this host
+                host[3] = time.time()
+                if debug_on:
+                    debugFile.write("Email sent time logged: " + str(host[3]) + "\n")
 
             #If a prior email was sent, check how much time has lapsed. Then send another email if
             #the time lapsed exceeds the periodic interval.
-            elif int(time.time()) - last_email_sent_time >= email_notification_every:
+            elif (int(time.time()) - host[3]) / 60 + 1 >= email_notification_every:
                 print("Persistant issue logged again, generating another email")
                 sendEmail(sender, passwd, destination_address, body, subject, serverInfo)
-                prior_email_sent = True
-                last_email_sent_time = int(time.time())
+                #track the time the email was sent for this host
+                host[3] = time.time()
 
             #If the device isnt already in the list of failed devices, add it.
+            if debug_on:
+                debugFile.write("Current list of failed devices: " + str(failedDevices) + "\n")
             found = False
-            if not failedDevices:
-                failedDevices.append(host)
-            else:
+            if failedDevices:
                 for device in failedDevices:
-                    if device == host:
+                    if device == host[0]:
                         found = True
-                    if found == False:
-                        print("Logging the device as failed.")
-                        failedDevices.append(host)
+                        if debug_on:
+                            debugFile.write("host is already in the list of failed devices\n")
+                if found == False:
+                    print("Logging the device as failed.")
+                    failedDevices.append(host[0])
+                    if debug_on:
+                        debugFile.write("host was not in the list of failed devices adding it not\n")
+                        debugFile.write("failedDevices: " + str(failedDevices) + "\n")
+            else:
+                failedDevices.append(host[0])
 
-        else:
+
+        if pingStatus == True:
             #if the ping to a previouly failed device succeeds, remove it from the list of failed devices
             #and notify the admin.
+            if debug_on:
+                        debugFile.write("Connection was successful\n")
             if detectedFailures:
                 for device in failedDevices:
-                    if host == device:
-                        print("Connection to " + host[0] + "Restored")
+                    if host[0] == device:
+                        print("Connection to " + host[0] + " Restored")
                         print("Removing device from the failed log")
-                        failedDevices.remove(host)
+
+                        #Remove the host and reset its last email sent time tracker to 0
+                        failedDevices.remove(host[0])
+                        host[3] = 0
+
                         #Send a new email informing the recipient that the connection has been restored
                         body = "Connection to host " + str(host[0]) + " was restored.\n" + str(host[1]) + "\n" + str(host[2]) 
                         subject = "Connection Restored!"
                         sendEmail(sender, passwd, destination_address, body, subject, serverInfo)
+
                         #Create a new log entry
                         log = open(log_file_name,"a")
                         log_entry = check_output("time /T", shell=True).decode().replace("\n",'')
-                        log_entry = log_entry[:len(log_entry)-1] + " Connection to host " + str(host) + " RESTORED\n"
+                        log_entry = log_entry[:len(log_entry)-1] + " Connection to host " + str(host[:3]) + " RESTORED\n"
                         log.write(log_entry)
                         log.close()
+
+                    #Exit the for loop as soon as a match is found
+                    break
         print("<--")
 
     #If no failed devices are being tracked, reset trackers
     if not failedDevices:
+        failedDevices.clear()
         issue_start_time = 0
         detectedFailures = False
         prior_email_sent = False
@@ -155,4 +206,5 @@ while(True):
     else:
         print("\nConnection failures detected!")
     print("=========================================================\n")
+    debugFile.close()
             

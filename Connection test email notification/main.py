@@ -4,7 +4,9 @@ from os import path
 import csv,time,os,subprocess 
 
 #The Simple Connection Tester v1.0.1
-print("The Simple Connection Tester v1.0.1")
+#Samuel Bravo, 01/31/2020
+
+print("The Simple Connection Tester v1.0.2")
 
 #!For gmail accounts less secure app access MUST be enabled
 #!https://myaccount.google.com/lesssecureapps
@@ -26,10 +28,11 @@ else:
     with open("hosts.csv") as csvFile:
         csvReader = csv.reader(csvFile, delimiter=',')
         for row in csvReader:
-            if row:
+            #if the line contains data AND doesnt start with #, append it
+            if row and row[0].find("#") == -1:
                 hosts_info.append(row)
         csvFile.close()
-
+print(hosts_info)
 #Get the credentials for the admin email account to send an email notification
 creds = []
 if path.exists("creds.csv") == False:

@@ -75,4 +75,18 @@ def create_log_file():
         logFile.write(the_date_is + " @ " + the_time_is)
         logFile.close()
 
+    #Begin deleting old log files once the limit is reached (150)
+    #get the all the file names in oldest-newest order
+    log_files = check_output("dir /OD /B logs", shell=True).decode()
+    log_files = log_files.split("\n")
+    num_of_logs = len(log_files)
+    #if the total files exceed 150, delete the oldest ones
+    if num_of_logs > 150:
+        delete_logs = num_of_logs - 150
+        log_files = log_files[0:delete_logs]
+        for file in log_files:
+            file = "\"" + file[0:len(file)-1] + "\""
+            os.system("cd logs")
+            delete_log_file = check_output("del /F logs\\" + file, shell=-True).decode()
+            
     return log_file_name
